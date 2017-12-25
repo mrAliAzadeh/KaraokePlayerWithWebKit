@@ -25,7 +25,9 @@
                                     <constraint firstAttribute="width" constant="50" id="VFH-ig-D0G"/>
                                     <constraint firstAttribute="height" constant="50" id="dYg-gY-rqN"/>
                                 </constraints>
-                                <state key="normal" title="click"/>
+                                <state key="normal" title="Record">
+                                    <color key="titleColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                </state>
                                 <connections>
                                     <action selector="btnClicked:" destination="BYZ-38-t0r" eventType="touchUpInside" id="7ac-FE-sP4"/>
                                 </connections>
