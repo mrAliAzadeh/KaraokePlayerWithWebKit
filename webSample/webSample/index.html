@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html prefix="og: http://ogp.me/ns#" xmlns:og="http://ogp.me/ns#" xmlns:fb="http://ogp.me/ns/fb#">
+    <head>
+        <!-- mjhatamy@gmail.com: Force Page to be UTF-8 and shows persian texts correctly -->
+        <meta charset="utf8"/>
+        <title>Subtitle</title>
+
+        <link rel="stylesheet" href="./bootstrap.min.css">
+
+        <!-- jQuery library -->
+        <script src="./jquery.min.js"></script>
+
+        <!-- Latest compiled Java Script -->
+        <script src="./bootstrap.min.js"></script>
+        
+        <link rel="stylesheet" href="./style.css">
+         
+        <script src="./sample.json"></script>
+        <!--mjhatamy@gmail.com Styles must be placed in the head of html document -->
+        
+    </head>
+    
+    <body style="background-color: transparent;">
+
+
+
+
+<script>
+        var DataLength ;
+        var DropPattern = [];
+        var RemovePattern = [];
+        var PositionPattern =[];
+        var waiting = false;
+        var second = 0;
+        var position="top";
+        
+        var DropIndex=0;
+        var RemoveIndex=0;
+        var SingingIndex=0;
+        
+        function CreatePattern(data){
+
+            //alert(data[2].DisplayStartTime);
+            for(var i=0; i<DataLength; i++)
+            {
+                if(DataLength-1 == i)
+                {
+                    if(DropPattern[i]==0)
+                    {
+                        DropPattern[i] =data[i].DisplayStartTime;
+                        PositionPattern[i]=position;
+                        ChangePosition();
+                    }
+                    
+                    RemovePattern[i] =data[i].DisplayEndTime;    
+                }
+                else if(waiting == true || i==0 )
+                {
+                    
+                    if(data[i+1]!= null  )
+                    {
+                        if(i==0 && (data[i+1].DisplayStartTime - data[i].DisplayEndTime) >3000)
+                        {
+                            waiting=true;
+                            ResetPosition();
+                        }
+                        
+                        if( (data[i+1].DisplayStartTime - data[i].DisplayEndTime) <= 3000 )
+                        {
+                            
+                            if(DropPattern[i]==0)
+                            {
+                                DropPattern[i] = data[i].DisplayStartTime;
+                                if(PositionPattern[i]=="")
+                                {
+                                    PositionPattern[i]=position;
+                                    ChangePosition();
+                                }
+                            }
+                            
+                            DropPattern[i+1] = data[i].DisplayStartTime;
+                            PositionPattern[i+1]=position;
+                            ChangePosition();
+                            //alert(DropPattern[i+1]);
+                            if(data[i+2] != null)
+                            {
+                                if((data[i+2].DisplayStartTime - data[i+1].DisplayEndTime) <= 3000)
+                                {
+                                    DropPattern[i+2] = data[i].DisplayEndTime;
+                                    if(PositionPattern[i+2]=="")
+                                    {
+                                        PositionPattern[i+2]=position;
+                                        ChangePosition();
+                                    }
+                                    
+                                }
+                            }
+                            
+                            RemovePattern[i] = data[i].DisplayEndTime;
+                            
+                            waiting = false;
+                        }
+                        else
+                        {
+                            if(DropPattern[i]==0)
+                            {
+                                DropPattern[i] = data[i].DisplayStartTime;
+                                if(PositionPattern[i]=="")
+                                {
+                                    PositionPattern[i]=position;
+                                    ChangePosition();
+                                }
+                            }
+                            
+                            RemovePattern[i] = data[i].DisplayEndTime;
+                            
+                            ResetPosition();
+                            
+                        }
+                    }
+                    
+                }
+                else if(data[i+1]!= null)
+                {
+                    
+                    if((data[i+1].DisplayStartTime - data[i].DisplayEndTime) > 3000)
+                    {
+                        
+                        if(DropPattern[i]==0)
+                        {
+                            DropPattern[i] =data[i].DisplayStartTime;
+                            if(PositionPattern[i]=="")
+                            {
+                                PositionPattern[i]=position;
+                                ChangePosition();
+                            }
+                        }
+                            
+                        RemovePattern[i] =data[i].DisplayEndTime;
+                        waiting = true;
+                        ResetPosition();
+                    }
+                    else
+                    {
+                        if(DropPattern[i]==0)
+                        {
+                            DropPattern[i] =data[i].DisplayStartTime;
+                            if(PositionPattern[i]=="")
+                            {
+                                PositionPattern[i]=position;
+                                ChangePosition();
+                            }
+                        }   
+                        if(data[i+2] != null && DropPattern[i+2]==0)
+                        {
+                            if((data[i+2].DisplayStartTime - data[i+1].DisplayEndTime) <= 3000)
+                            {
+                                DropPattern[i+2] = data[i].DisplayEndTime;
+                                if(PositionPattern[i+2]=="")
+                                {
+                                    PositionPattern[i+2]=position;
+                                    ChangePosition();
+                                }
+                            }
+                        }
+                        
+                        
+
+                        RemovePattern[i] =data[i].DisplayEndTime;
+                    } 
+                }
+                
+                
+            }
+        }
+        
+        function initialized(){
+            for(var i=0; i<DataLength; i++)
+            {
+                DropPattern.push(0);
+                RemovePattern.push(0);
+                PositionPattern.push("");
+            }
+        }
+        
+        function ShowPattern(){
+            var str="";
+            for(var i=0; i<DataLength; i++)
+            {
+                if(DropPattern[i]-RemovePattern[i-1] >3000)
+                    str +="<br>";
+                str += "Start: "+DropPattern[i]+"| End: "+RemovePattern[i]+" | pos: "+PositionPattern[i]+"<br>";
+            }
+                
+                
+            $(".pattern").append(str);
+        }
+
+        
+        function updateTrackTime(track,data){
+            timer(data);
+          
+            var currTime = Math.floor(track.currentTime*1000).toString(); 
+          
+            second = currTime;
+        }
+        
+        var min;
+        var sec;
+        var tmp;
+        //string
+        var MinZ;
+        var SecZ;
+        function timer(){
+            
+            min=Math.floor(second/60000);
+            sec=Math.floor(second/1000);
+            if(Math.floor(min)>0)
+                tmp = sec-(min*60);
+            else
+                tmp = sec;
+                
+            if(min<10)
+                MinZ ="0";
+            else
+                MinZ = "";
+            if(tmp<10)
+                SecZ ="0";
+            else
+                SecZ = "";
+            $(".timer").html(MinZ+min+":"+SecZ+tmp );
+            
+         /*//second += 1;
+            $(".timer").html("Second: <br>"+second.toString()+"<br>SingerStatus: <br>"+statusTimer );
+          */
+         }
+        
+        
+        function ChangePosition(){
+            if(position=="top")
+                position="bottom";
+            else
+                position="top";
+        }
+
+        
+        function ResetPosition(){
+            position="top";
+        }
+        
+        
+        function Drop(index,data){
+            if(PositionPattern[index]=="top")
+            {
+                $("#top .main-text").append('<div>'+data[index].title+'&nbsp;&nbsp;</div><div class="clear"></div>');
+                
+                //Set Width of Saying Container
+                autoWidth = $("#top .main-text").width();
+                $("#top .saying").css('width', autoWidth);
+            }
+            else
+            {
+                $("#bottom .main-text").append('<div>'+data[index].title+'&nbsp;&nbsp;</div><div class="clear"></div>');
+                
+                //Set Width of Saying Container
+                autoWidth = $("#bottom .main-text").width();
+                $("#bottom .saying").css('width', autoWidth);
+            }
+        }
+        
+        
+        function Remove(index){
+            if(PositionPattern[index]=="top")
+            {
+                $("#top .main-text").html("");
+                $("#top .saying").html("");
+            }
+            else
+            {
+                $("#bottom .main-text").html("");
+                $("#bottom .saying").html("");
+            }
+            
+        }
+        
+        
+        function Pattern(data){
+            
+            if(second >= RemovePattern[RemoveIndex])
+            {
+                Remove(RemoveIndex);
+                RemoveIndex++;
+            }
+            
+            if(second >= DropPattern[DropIndex])
+            {
+                Drop(DropIndex,data);
+                DropIndex++;
+            }
+            
+            if(second >= DropPattern[SingingIndex])
+            {
+                Singing(data);
+            }
+            
+            singerStatus(data);
+          
+        }
+        
+
+        
+        
+        
+        //Singing
+        var WordCounter=0;
+        var WordLength = 0;
+        var IndexOfStartedChar =0;
+        var IndexOfEndedChar=0;
+        
+        function Singing(data){
+            
+            if(SingingIndex<data.length)
+            {
+                if(second >= data[SingingIndex].HighlighOffsetsTiming[WordCounter].startTime )
+                {
+                    WordLength = data[SingingIndex].HighlighOffsetsTiming.length;
+                    
+                    IndexOfStartedChar= data[SingingIndex].HighlighOffsetsTiming[WordCounter].biginnerCharIndex ;
+                    IndexOfEndedChar= data[SingingIndex].HighlighOffsetsTiming[WordCounter].endCharIndex ;
+                    
+                    rate = data[SingingIndex].HighlighOffsetsTiming[WordCounter].rate ;
+                
+                    if(WordLength > WordCounter)
+                    {
+                        str = data[SingingIndex].title.slice(IndexOfStartedChar,IndexOfEndedChar);
+                                    
+                        if(str.includes(" "))
+                            str = str.replace(" ","");
+                        str += "&nbsp;";
+                        
+                        DropSingingWithAnimate(str,rate);
+                        
+                        if( WordLength == WordCounter )
+                        {
+                            SingingIndex++;
+                            WordCounter=0;
+                            WordLength=0;
+                        }//EndIf 4
+                        
+                    }//EndIf 3
+                    
+                }//EndIf 2
+                
+            }//EndIf 1
+            
+        }//End Function
+        
+        
+        function DropSingingWithAnimate(str,rate){
+            var selector;
+            
+            if(PositionPattern[SingingIndex]=="top")
+            {
+                $("#top .saying").append("<div>"+str+"</div>");
+                selector="#top .saying div:last";
+            }
+            else// is bottom
+            {
+                $("#bottom .saying").append("<div>"+str+"</div>");
+                selector="#bottom .saying div:last";
+            }
+            
+            
+            //first set width to auto for Get main value
+            $(selector).css('width', 'auto');
+            //get main value 
+            autoWidth = $(selector).width();
+            //set width to zero
+            $(selector).css('width', '0');
+            //animate width from zero to main value
+            $(selector).animate({width:autoWidth}, rate, function() { });
+            
+            WordCounter++;
+            
+        }
+        
+        var statusTimer;
+        var StatusCounter=0;
+        var currentStatus;
+
+       
+//Call     
+       
+        function singerStatus(data){
+            var startTime =data[StatusCounter].DisplayStartTime;
+            var EndTime = data[StatusCounter].DisplayEndTime;
+            if(StatusCounter<data.length)
+            {
+                statusTimer = ( data[StatusCounter].DisplayStartTime -second);
+               
+                
+                if(second >= startTime && second < EndTime )
+                {
+                    $(".wait").html('<img src="./singing.png" >');
+                    currentStatus = 2;
+                    
+                }//end ElseIf 1
+                else if(statusTimer > 3000 )
+                {
+                    $(".wait").html('<img src="./wating.png" >');
+                    currentStatus = 0;
+                    waitLong= true;
+                    
+                }//end if 2
+                else if( statusTimer < 3000)
+                {   
+                    if(currentStatus == 0)
+                        $(".wait").html('<img src="./singing.png" >'+Math.ceil(statusTimer/1000) );
+                    else if(currentStatus == 2)
+                        $(".wait").html('<img src="./wating.png" >');  
+                } //end ElseIf 2  
+            }//end if 1
+            
+            if( second > EndTime)
+                StatusCounter++;
+        }
+       
+       
+                
+
+        
+        $(document).ready(function(){
+             
+            trackAudio = document.getElementById('audio');
+            
+            DataLength = data.length;
+            
+            initialized();
+            
+            CreatePattern(data);
+            
+            ShowPattern();
+            
+            setInterval(function(){ timer(data); }, 5);
+            setInterval(function(){ Pattern(data); }, 5);
+            setInterval(function(){ updateTrackTime(trackAudio,data); }, 5);
+            
+        });
+    
+    function play(){
+        //var video = document.getElementById("video");
+        var music = document.getElementById("audio");
+        
+        //video.play();
+        music.play();
+    }
+    function stop(){
+        //var video = document.getElementById("video");
+        var music = document.getElementById("audio");
+        
+        //video.pause();
+        music.pause();
+    }
+        
+     
+
+</script>
+
+
+
+
+
+    <br>
+    <br>
+    <div class="timer">
+        0
+    </div>
+    <!--
+    <video id="video" muted >
+        <source src="movie.mp4" type="video/mp4">
+        <source src="movie.ogg" type="video/ogg">
+        Your browser does not support the video tag.
+    </video>
+    -->
+    <audio id="audio" >
+        <source src="Erfan - Khosh Oomadi (Ft Canis).mp3"   type="audio/mpeg">
+        Your browser does not support the audio element.
+    </audio>
+
+
+    <div id="currentTime"> </div>
+    <div id="duration"> </div>
+    
+    
+    <div class="wait alert alert-info">
+        Singer Status
+    </div>
+    
+    
+    <div id="SubtitleContainer" class="well">
+        <!-- TOP -->
+        <div id="top">
+            <!--Singing Container-->
+            <div class="saying fa"> </div>
+            
+            <!--Main Container-->
+            <div class="main-text"> </div>
+            
+            <div class="clear"> </div>
+        </div> <br>
+        
+        
+        <!-- BOTTOM -->
+        <div id="bottom">
+            <!--Singing Container-->
+            <div class="saying fa"> </div>
+            
+            <!--Main Container-->
+            <div class="main-text"> </div>
+            
+            <div class="clear"> </div>
+        </div>
+    </div><!--End SubtitleContainer-->
+
+    <div class="pattern well" style="display:block; margin:auto; overflow-y:scroll;width:50%;height:40%;">
+        Pattern data...
+    </div>
+
+    </body>
+</html>
